@@ -2,7 +2,8 @@ import React from "react";
 import {QRCodeCanvas} from "qrcode.react";
 
 const QRDisplay = ({ userId }) => {
-  const accessUrl = `http://192.168.36.67:3000/scan/${userId}`;
+  const accessUrl = `https://doc-scanner-hxn2r2wxq-yashjaiswalkits-projects.vercel.app/scan/${userId}`;
+
   console.log("QR URL:", accessUrl);
   return (
     <div className="text-center mt-4">
