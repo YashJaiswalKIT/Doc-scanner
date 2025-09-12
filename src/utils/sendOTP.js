@@ -6,7 +6,7 @@ export const sendOTP = async (email) => {
 
   try {
     
-    const response = await fetch("http://192.168.36.67:8000/send-otp", {
+    const response = await fetch("https://doc-scanner-backend.onrender.com/api/send-otp", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email }),
