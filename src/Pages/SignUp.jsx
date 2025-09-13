@@ -30,24 +30,25 @@ const Signup = () => {
   };
 
   const handleOtpSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    try {
-      const response = await fetch("http://localhost:8000/verify-otp",{
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: user.email, otp }),
-      });
+  try {
+    const response = await fetch("https://doc-scanner-backend.onrender.com/verify-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: user.email, otp: String(otp) }),
+    });
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "OTP verification failed");
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || "OTP verification failed");
 
-      await authService.createAccount(user); 
-      navigate("/dashboard");
-    } catch (err) {
-      setError(err.message || "Signup failed");
-    }
-  };
+    await authService.createAccount(user); 
+    navigate("/dashboard");
+  } catch (err) {
+    setError(err.message || "Signup failed");
+  }
+};
+
 
   return (
     <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded shadow">
