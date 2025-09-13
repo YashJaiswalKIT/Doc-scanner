@@ -14,6 +14,7 @@ const Signup = () => {
     setUser({ ...user, [e.target.name]: e.target.value });
   };
 
+  // Step 1: Send OTP
   const handleFormSubmit = async (e) => {
     e.preventDefault();
 
@@ -22,54 +23,38 @@ const Signup = () => {
     }
 
     try {
-      await sendOTP(user.email); 
+      await sendOTP(user.email);
       setStep(2);
+      setError("");
     } catch (err) {
       setError("Failed to send OTP. Please check your email.");
     }
   };
 
- const handleOtpSubmit = async (e) => {
-  e.preventDefault();
+  // Step 2: Verify OTP
+  const handleOtpSubmit = async (e) => {
+    e.preventDefault();
 
-  try {
-    const response = await fetch("https://doc-scanner-backend.onrender.com/verify-otp", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: user.email, otp: String(otp) }),
-    });
+    try {
+      const response = await fetch("https://doc-scanner-backend.onrender.com/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: user.email, otp: String(otp) }),
+      });
 
-    const data = await response.json();
-    console.log("🔍 Verify OTP response:", data);
+      const data = await response.json();
+      console.log("🔍 Verify OTP response:", data);
 
-    if (!response.ok || !data.success) {
-      throw new Error(data.message || "OTP verification failed");
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "OTP verification failed");
+      }
+
+      await authService.createAccount(user);
+      navigate("/dashboard");
+    } catch (err) {
+      setError(err.message || "Signup failed");
     }
-
-    await authService.createAccount(user);
-    navigate("/dashboard");
-  } catch (err) {
-    setError(err.message || "Signup failed");
-  }
-};
-
-  try {
-    const response = await fetch("https://doc-scanner-backend.onrender.com/verify-otp", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: user.email, otp: String(otp) }),
-    });
-
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message || "OTP verification failed");
-
-    await authService.createAccount(user); 
-    navigate("/dashboard");
-  } catch (err) {
-    setError(err.message || "Signup failed");
-  }
-};
-
+  };
 
   return (
     <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded shadow">
