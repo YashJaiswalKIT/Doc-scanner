@@ -29,8 +29,29 @@ const Signup = () => {
     }
   };
 
-  const handleOtpSubmit = async (e) => {
+ const handleOtpSubmit = async (e) => {
   e.preventDefault();
+
+  try {
+    const response = await fetch("https://doc-scanner-backend.onrender.com/verify-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: user.email, otp: String(otp) }),
+    });
+
+    const data = await response.json();
+    console.log("🔍 Verify OTP response:", data);
+
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || "OTP verification failed");
+    }
+
+    await authService.createAccount(user);
+    navigate("/dashboard");
+  } catch (err) {
+    setError(err.message || "Signup failed");
+  }
+};
 
   try {
     const response = await fetch("https://doc-scanner-backend.onrender.com/verify-otp", {
