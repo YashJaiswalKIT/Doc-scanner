@@ -22,16 +22,7 @@ const ScanUserQR = () => {
         conf.appwriteCollectionId
       );
 
-      // console.log("📄 Total documents fetched:", res.documents.length);
-
-      // Debug: Print each document's userId and email
-      // res.documents.forEach((doc, i) => {
-      //   console.log(`🔍 Document ${i + 1}:`, {
-      //     $id: doc.$id,
-      //     userId: doc.userId,
-      //     email: doc.email,
-      //   });
-      // });
+      
 
       // Filter documents by matching userId
       const ownerDocs = res.documents.filter(
