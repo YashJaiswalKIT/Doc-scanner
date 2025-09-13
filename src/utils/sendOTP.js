@@ -15,7 +15,7 @@ export const sendOTP = async (email) => {
     const data = await response.json();
     console.log("📦 Response from /send-otp:", data);
 
-    if (!response.ok || !data.otp) {
+    if (!response.ok || !data.success) {
       throw new Error(data.message || "OTP not received");
     }
 
