@@ -8,22 +8,21 @@ const ScanUserQR = () => {
   const [otp, setOtp] = useState("");
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
-  const [serverOtp, setServerOtp] = useState("");
+  const [ownerEmail, setOwnerEmail] = useState("");
 
   const navigate = useNavigate();
-const [ownerEmail, setOwnerEmail] = useState("");
+
   /**
    * 📩 Send OTP to Owner's Email
    */
   const sendOtpToOwner = async () => {
     try {
-      // Fetch all documents from Appwrite
+      // Fetch documents from Appwrite
       const res = await service.databases.listDocuments(
         conf.appwriteDatabaseId,
         conf.appwriteCollectionId
       );
 
-      // Find owner's document by matching userId
       const ownerDocs = res.documents.filter(
         (doc) => doc.userId?.trim() === userId?.trim()
       );
@@ -33,11 +32,14 @@ const [ownerEmail, setOwnerEmail] = useState("");
         return;
       }
 
-      const ownerEmail = ownerDocs[0]?.email;
-      if (!ownerEmail) {
+      const email = ownerDocs[0]?.email;
+      if (!email) {
         setError("Owner email not found in the document.");
         return;
       }
+
+      // Save email in state for verification
+      setOwnerEmail(email);
 
       // Call backend to send OTP
       const response = await fetch(
@@ -45,7 +47,7 @@ const [ownerEmail, setOwnerEmail] = useState("");
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: ownerEmail }),
+          body: JSON.stringify({ email }),
         }
       );
 
@@ -55,11 +57,9 @@ const [ownerEmail, setOwnerEmail] = useState("");
         throw new Error(data?.message || "Failed to send OTP.");
       }
 
-      console.log("✅ OTP sent to owner:", data.otp);
-
-      // Save OTP locally to compare later
+      console.log("✅ OTP sent to owner (check email)");
       setSent(true);
-      setServerOtp(data.otp);
+      setError(""); // Clear previous errors
     } catch (err) {
       console.error("OTP send failed:", err);
       setError("Could not send OTP. Please try again.");
@@ -67,18 +67,36 @@ const [ownerEmail, setOwnerEmail] = useState("");
   };
 
   /**
-   * ✅ Verify entered OTP
+   * ✅ Verify entered OTP via backend
    */
-  const verifyOtp = () => {
-    console.log("Entered OTP:", otp);
-    console.log("Server OTP:", serverOtp);
+  const verifyOtp = async () => {
+    try {
+      if (!otp) {
+        alert("Please enter OTP");
+        return;
+      }
 
-    if (otp.trim() === serverOtp?.toString().trim()) {
-      console.log("✅ OTP matched! Navigating...");
-      navigate(`/access-form/${userId}`);
-    } else {
-      console.warn("❌ OTP mismatch");
-      alert("Invalid OTP");
+      const response = await fetch(
+        "https://doc-scanner-backend.onrender.com/verify-otp",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: ownerEmail, otp }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        console.log("✅ OTP verified. Navigate to access form");
+        navigate(`/access-form/${userId}`);
+      } else {
+        console.warn("❌ OTP mismatch");
+        alert(data.message || "Invalid OTP");
+      }
+    } catch (err) {
+      console.error("OTP verification failed:", err);
+      alert("OTP verification failed. Try again.");
     }
   };
 
