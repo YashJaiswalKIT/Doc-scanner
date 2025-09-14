@@ -65,18 +65,32 @@ const ScanUserQR = () => {
     }
   };
 
-  const verifyOtp = () => {
-  console.log(" Entered OTP:", otp);
-  console.log("Server OTP:", serverOtp);
+  const verifyOtp = async () => {
+  try {
+    const response = await fetch("https://your-backend-url.vercel.app/verify-otp", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email: ownerEmail, otp }), // ownerEmail = jiska QR scan hua
+    });
 
-  if (otp=== serverOtp?.toString().trim()) {
-    console.log("OTP matched! Navigating...");
-    navigate(`/access-form/${userId}`);
-  } else {
-    console.warn("OTP mismatch");
-    alert("Invalid OTP");
+    const data = await response.json();
+    console.log("Verify Response:", data);
+
+    if (data.success) {
+      console.log("✅ OTP matched! Navigating...");
+      navigate(`/access-form/${userId}`);
+    } else {
+      console.warn("❌ OTP mismatch:", data.message);
+      alert("Invalid OTP");
+    }
+  } catch (error) {
+    console.error("Error verifying OTP:", error);
+    alert("Server error while verifying OTP");
   }
 };
+
 
 
   return (
