@@ -4,22 +4,16 @@ import conf from "../conf/config";
 import service from "../appwrite/config";
 
 const ScanUserQR = () => {
-  const { id: userId } = useParams(); // QR scanned: /scan/:id
+  const { id: userId } = useParams();
   const [otp, setOtp] = useState("");
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
+  const [ownerEmail, setOwnerEmail] = useState(""); // ✅ store in state
 
   const navigate = useNavigate();
 
-  // Use a local variable to avoid React async state issue
-  let ownerEmail = "";
-
-  /**
-   * 📩 Send OTP to Owner's Email
-   */
   const sendOtpToOwner = async () => {
     try {
-      // Fetch all documents from Appwrite
       const res = await service.databases.listDocuments(
         conf.appwriteDatabaseId,
         conf.appwriteCollectionId
@@ -34,19 +28,20 @@ const ScanUserQR = () => {
         return;
       }
 
-      ownerEmail = ownerDocs[0]?.email;
-      if (!ownerEmail) {
+      const email = ownerDocs[0]?.email;
+      if (!email) {
         setError("Owner email not found in the document.");
         return;
       }
 
-      // Call backend to send OTP
+      setOwnerEmail(email); // ✅ store in state
+
       const response = await fetch(
         "https://doc-scanner-backend.onrender.com/send-otp",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: ownerEmail }),
+          body: JSON.stringify({ email }),
         }
       );
 
@@ -66,9 +61,6 @@ const ScanUserQR = () => {
     }
   };
 
-  /**
-   * ✅ Verify entered OTP via backend
-   */
   const verifyOtp = async () => {
     try {
       if (!otp) {
