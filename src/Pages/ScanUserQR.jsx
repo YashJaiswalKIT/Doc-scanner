@@ -11,7 +11,7 @@ const ScanUserQR = () => {
   const [serverOtp, setServerOtp] = useState("");
 
   const navigate = useNavigate();
-
+const [ownerEmail, setOwnerEmail] = useState("");
   /**
    * 📩 Send OTP to Owner's Email
    */
