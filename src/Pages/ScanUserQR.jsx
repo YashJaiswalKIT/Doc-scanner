@@ -8,16 +8,18 @@ const ScanUserQR = () => {
   const [otp, setOtp] = useState("");
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
-  const [ownerEmail, setOwnerEmail] = useState("");
 
   const navigate = useNavigate();
+
+  // Use a local variable to avoid React async state issue
+  let ownerEmail = "";
 
   /**
    * 📩 Send OTP to Owner's Email
    */
   const sendOtpToOwner = async () => {
     try {
-      // Fetch documents from Appwrite
+      // Fetch all documents from Appwrite
       const res = await service.databases.listDocuments(
         conf.appwriteDatabaseId,
         conf.appwriteCollectionId
@@ -32,14 +34,11 @@ const ScanUserQR = () => {
         return;
       }
 
-      const email = ownerDocs[0]?.email;
-      if (!email) {
+      ownerEmail = ownerDocs[0]?.email;
+      if (!ownerEmail) {
         setError("Owner email not found in the document.");
         return;
       }
-
-      // Save email in state for verification
-      setOwnerEmail(email);
 
       // Call backend to send OTP
       const response = await fetch(
@@ -47,19 +46,20 @@ const ScanUserQR = () => {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email }),
+          body: JSON.stringify({ email: ownerEmail }),
         }
       );
 
       const data = await response.json();
+      console.log("📦 Response from /send-otp:", data);
 
       if (!response.ok || !data.success) {
         throw new Error(data?.message || "Failed to send OTP.");
       }
 
-      console.log("✅ OTP sent to owner (check email)");
+      console.log("✅ OTP sent to owner. Check email.");
       setSent(true);
-      setError(""); // Clear previous errors
+      setError("");
     } catch (err) {
       console.error("OTP send failed:", err);
       setError("Could not send OTP. Please try again.");
@@ -75,6 +75,13 @@ const ScanUserQR = () => {
         alert("Please enter OTP");
         return;
       }
+
+      if (!ownerEmail) {
+        alert("Owner email not set. Please resend OTP.");
+        return;
+      }
+
+      console.log("Sending OTP verification request:", { email: ownerEmail, otp });
 
       const response = await fetch(
         "https://doc-scanner-backend.onrender.com/verify-otp",
