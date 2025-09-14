@@ -4,14 +4,14 @@ import conf from "../conf/config";
 import service from "../appwrite/config";
 
 const ScanUserQR = () => {
-  const { id: userId } = useParams(); 
+  const { id: userId } = useParams(); // QR scanned: /scan/:id
   const [otp, setOtp] = useState("");
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
-  const [serverOtp, setServerOtp] = useState("");
-  const [ownerEmail, setOwnerEmail] = useState("");  // ✅ Add state for email
+  const [ownerEmail, setOwnerEmail] = useState(""); // ✅ store owner email
   const navigate = useNavigate();
 
+  // 🔹 Step 1: Send OTP to owner
   const sendOtpToOwner = async () => {
     try {
       const res = await service.databases.listDocuments(
@@ -19,6 +19,7 @@ const ScanUserQR = () => {
         conf.appwriteCollectionId
       );
 
+      // Filter documents by matching userId
       const ownerDocs = res.documents.filter(
         (doc) => doc.userId?.trim() === userId?.trim()
       );
@@ -29,18 +30,22 @@ const ScanUserQR = () => {
       }
 
       const email = ownerDocs[0]?.email;
-      setOwnerEmail(email);   // ✅ Save for verify step
-
       if (!email) {
         setError("Owner email not found in the document.");
         return;
       }
 
-      const response = await fetch("https://doc-scanner-backend.onrender.com/send-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
+      setOwnerEmail(email); // ✅ save for verify step
+
+      // Call backend to send OTP
+      const response = await fetch(
+        "https://doc-scanner-backend.onrender.com/send-otp",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        }
+      );
 
       const data = await response.json();
 
@@ -48,27 +53,35 @@ const ScanUserQR = () => {
         throw new Error(data?.message || "Failed to send OTP.");
       }
 
+      console.log("✅ OTP sent to owner email");
       setSent(true);
     } catch (err) {
+      console.error("OTP send failed:", err);
       setError("Could not send OTP. Please try again.");
     }
   };
 
+  // 🔹 Step 2: Verify OTP with backend
   const verifyOtp = async () => {
     try {
-      const response = await fetch("https://doc-scanner-backend.onrender.com/verify-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: ownerEmail, otp }), // ✅ Now defined
-      });
+      const response = await fetch(
+        "https://doc-scanner-backend.onrender.com/verify-otp",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: ownerEmail, otp }),
+        }
+      );
 
       const data = await response.json();
       if (data.success) {
+        console.log("✅ OTP verified, navigating...");
         navigate(`/access-form/${userId}`);
       } else {
         alert("Invalid OTP");
       }
     } catch (error) {
+      console.error("OTP verify failed:", error);
       alert("Server error while verifying OTP");
     }
   };
