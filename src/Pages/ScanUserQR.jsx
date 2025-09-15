@@ -4,54 +4,68 @@ import conf from "../conf/config";
 import service from "../appwrite/config";
 
 const ScanUserQR = () => {
-  const { id: userId } = useParams();
+  const { id: userId } = useParams(); // 👈 QR se ownerId aa rahi hai
   const [otp, setOtp] = useState("");
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
-  const [ownerEmail, setOwnerEmail] = useState(""); // ✅ store in state
+  const [ownerEmail, setOwnerEmail] = useState(""); // ✅ React state for email
 
   const navigate = useNavigate();
-const sendOtpToOwner = async () => {
-  try {
-    
-    const owner = await service.account.get(userId);
-    const email = owner.email;
 
-    if (!email) {
-      setError("Owner email not found in account.");
-      return;
-    }
+  // ✅ Send OTP to document owner's email
+  const sendOtpToOwner = async () => {
+    try {
+      // Owner ka document fetch karo (collection: documents)
+      const res = await service.databases.listDocuments(
+        conf.appwriteDatabaseId,
+        conf.appwriteCollectionId
+      );
 
-    setOwnerEmail(email); 
+      // filter by QR ka userId
+      const ownerDocs = res.documents.filter(
+        (doc) => doc.userId?.trim() === userId?.trim()
+      );
 
-   
-    const response = await fetch(
-      "https://doc-scanner-backend.onrender.com/send-otp",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+      if (ownerDocs.length === 0) {
+        setError("This user has not uploaded any documents yet.");
+        return;
       }
-    );
 
-    const data = await response.json();
-    console.log("Response from /send-otp:", data);
+      const email = ownerDocs[0]?.email;
+      if (!email) {
+        setError("Owner email not found in the document.");
+        return;
+      }
 
-    if (!response.ok || !data.success) {
-      throw new Error(data?.message || "Failed to send OTP.");
+      setOwnerEmail(email); // ✅ state update
+
+      // Backend call to send OTP
+      const response = await fetch(
+        "https://doc-scanner-backend.onrender.com/send-otp",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        }
+      );
+
+      const data = await response.json();
+      console.log("📦 Response from /send-otp:", data);
+
+      if (!response.ok || !data.success) {
+        throw new Error(data?.message || "Failed to send OTP.");
+      }
+
+      console.log("✅ OTP sent to owner:", email);
+      setSent(true);
+      setError("");
+    } catch (err) {
+      console.error("OTP send failed:", err);
+      setError("Could not send OTP. Please try again.");
     }
+  };
 
-    console.log(" OTP sent to owner. Check email.");
-    setSent(true);
-    setError("");
-  } catch (err) {
-    console.error("OTP send failed:", err);
-    setError("Could not send OTP. Please try again.");
-  }
-};
-
-  
-
+  // ✅ Verify OTP
   const verifyOtp = async () => {
     try {
       if (!otp) {
@@ -64,7 +78,10 @@ const sendOtpToOwner = async () => {
         return;
       }
 
-      console.log("Sending OTP verification request:", { email: ownerEmail, otp });
+      console.log("Sending OTP verification request:", {
+        email: ownerEmail,
+        otp,
+      });
 
       const response = await fetch(
         "https://doc-scanner-backend.onrender.com/verify-otp",
