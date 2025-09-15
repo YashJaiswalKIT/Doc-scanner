@@ -11,55 +11,46 @@ const ScanUserQR = () => {
   const [ownerEmail, setOwnerEmail] = useState(""); // ✅ store in state
 
   const navigate = useNavigate();
+const sendOtpToOwner = async () => {
+  try {
+    
+    const owner = await service.account.get(userId);
+    const email = owner.email;
 
-  const sendOtpToOwner = async () => {
-    try {
-      const res = await service.databases.listDocuments(
-        conf.appwriteDatabaseId,
-        conf.appwriteCollectionId
-      );
-
-      const ownerDocs = res.documents.filter(
-        (doc) => doc.userId?.trim() === userId?.trim()
-      );
-
-      if (ownerDocs.length === 0) {
-        setError("This user has not uploaded any documents yet.");
-        return;
-      }
-
-      const email = ownerDocs[0]?.email;
-      if (!email) {
-        setError("Owner email not found in the document.");
-        return;
-      }
-
-      setOwnerEmail(email); // ✅ store in state
-
-      const response = await fetch(
-        "https://doc-scanner-backend.onrender.com/send-otp",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email }),
-        }
-      );
-
-      const data = await response.json();
-      console.log("📦 Response from /send-otp:", data);
-
-      if (!response.ok || !data.success) {
-        throw new Error(data?.message || "Failed to send OTP.");
-      }
-
-      console.log("✅ OTP sent to owner. Check email.");
-      setSent(true);
-      setError("");
-    } catch (err) {
-      console.error("OTP send failed:", err);
-      setError("Could not send OTP. Please try again.");
+    if (!email) {
+      setError("Owner email not found in account.");
+      return;
     }
-  };
+
+    setOwnerEmail(email); 
+
+   
+    const response = await fetch(
+      "https://doc-scanner-backend.onrender.com/send-otp",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      }
+    );
+
+    const data = await response.json();
+    console.log("Response from /send-otp:", data);
+
+    if (!response.ok || !data.success) {
+      throw new Error(data?.message || "Failed to send OTP.");
+    }
+
+    console.log(" OTP sent to owner. Check email.");
+    setSent(true);
+    setError("");
+  } catch (err) {
+    console.error("OTP send failed:", err);
+    setError("Could not send OTP. Please try again.");
+  }
+};
+
+  
 
   const verifyOtp = async () => {
     try {
