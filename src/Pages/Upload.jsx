@@ -13,43 +13,44 @@ const Upload = ({ user }) => {
   };
 
   const handleUpload = async (e) => {
-    e.preventDefault();
-    if(!user){
-      alert("Login first!")
-      navigate("/login")
-    }
-    if (!file ) {
-      setError("All fields are required.");
-      return;
-    }
+  e.preventDefault();
+  if (!user) {
+    alert("Login first!");
+    navigate("/login");
+    return;
+  }
+  if (!file) {
+    setError("Please select a file.");
+    return;
+  }
 
-    setLoading(true);
-    setError("");
+  setLoading(true);
+  setError("");
 
-    try {
-      
-      const uploaded = await service.uploadFile(file,user.$id);
-      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-      await service.addDocument({
-        userId: user.$id,
-        fileId: uploaded.$id,
-        filename: uploaded.name,
-        email: user.email,
-        phone: user.phone,
-        otpCode,
-        accessLog: [],
-        accessRequest:[]
-      });
+  try {
+    const uploaded = await service.uploadFile(file, user.$id);
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
 
-      alert("File uploaded and document created successfully!");
-      navigate("/dashboard");
-    } catch (err) {
-      console.error("Upload error:", err);
-      setError("Failed to upload file.");
-    } finally {
-      setLoading(false);
-    }
-  };
+    await service.addDocument({
+      userId: user.$id,
+      fileId: uploaded.$id,
+      filename: uploaded.name,
+      email: user.email,   // ✅ this will be used in ScanUserQR
+      otpCode,
+      accessLog: [],
+      accessRequest: []
+    });
+
+    alert("File uploaded and document created successfully!");
+    navigate("/dashboard");
+  } catch (err) {
+    console.error("Upload error:", err);
+    setError("Failed to upload file.");
+  } finally {
+    setLoading(false);
+  }
+};
+
   
 
   return (
