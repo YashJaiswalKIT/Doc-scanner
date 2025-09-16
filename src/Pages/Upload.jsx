@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import service from "../appwrite/config"; // 👈 yeh service class hai
+import service from "../appwrite/config"; // 👈 service class
 import { useNavigate } from "react-router-dom";
 
 const Upload = ({ user }) => {
@@ -13,50 +13,58 @@ const Upload = ({ user }) => {
   };
 
   const handleUpload = async (e) => {
-  e.preventDefault();
-  if (!user) {
-    alert("Login first!");
-    navigate("/login");
-    return;
-  }
-  if (!file) {
-    setError("Please select a file.");
-    return;
-  }
+    e.preventDefault();
 
-  setLoading(true);
-  setError("");
+    if (!user) {
+      alert("Login first!");
+      navigate("/login");
+      return;
+    }
 
-  try {
-    const uploaded = await service.uploadFile(file, user.$id);
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    if (!file) {
+      setError("Please select a file.");
+      return;
+    }
 
-    await service.addDocument({
-      userId: user.$id,
-      fileId: uploaded.$id,
-      filename: uploaded.name,
-      email: user.email,   // ✅ this will be used in ScanUserQR
-      otpCode,
-      accessLog: [],
-      accessRequest: []
-    });
+    setLoading(true);
+    setError("");
 
-    alert("File uploaded and document created successfully!");
-    navigate("/dashboard");
-  } catch (err) {
-    console.error("Upload error:", err);
-    setError("Failed to upload file.");
-  } finally {
-    setLoading(false);
-  }
-};
+    try {
+      // 1. Upload file in Appwrite Storage
+      const uploaded = await service.uploadFile(file, user.$id);
 
-  
+      // 2. Generate OTP and save in document
+      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+      // 3. Save document in Appwrite DB
+      await service.addDocument({
+        userId: user.$id,
+        fileId: uploaded.$id,
+        filename: uploaded.name,
+        email: user.email, // ✅ this exists in Appwrite user object
+        otpCode,           // ✅ save OTP with document
+        accessLog: [],     // ✅ initialize empty
+        accessRequest: []  // ✅ initialize empty
+      });
+
+      alert("File uploaded successfully with OTP saved!");
+      navigate("/dashboard");
+    } catch (err) {
+      console.error("Upload error:", err);
+      setError("Failed to upload file.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded shadow">
-      <h2 className="text-2xl font-bold mb-4 text-blue-700 text-center">Upload Your Document</h2>
+      <h2 className="text-2xl font-bold mb-4 text-blue-700 text-center">
+        Upload Your Document
+      </h2>
+
       {error && <p className="text-red-600 text-center mb-4">{error}</p>}
+
       <form onSubmit={handleUpload} className="space-y-4">
         <input
           type="file"
