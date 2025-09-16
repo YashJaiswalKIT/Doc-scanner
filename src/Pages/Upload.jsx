@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import service from "../appwrite/config"; // 👈 service class
+import service from "../appwrite/config"; // 👈 yeh service class hai
 import { useNavigate } from "react-router-dom";
 
 const Upload = ({ user }) => {
@@ -18,11 +18,10 @@ const Upload = ({ user }) => {
     if (!user) {
       alert("Login first!");
       navigate("/login");
-      return;
     }
 
     if (!file) {
-      setError("Please select a file.");
+      setError("All fields are required.");
       return;
     }
 
@@ -30,24 +29,22 @@ const Upload = ({ user }) => {
     setError("");
 
     try {
-      // 1. Upload file in Appwrite Storage
       const uploaded = await service.uploadFile(file, user.$id);
 
-      // 2. Generate OTP and save in document
       const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
 
-      // 3. Save document in Appwrite DB
       await service.addDocument({
         userId: user.$id,
         fileId: uploaded.$id,
         filename: uploaded.name,
-        email: user.email, // ✅ this exists in Appwrite user object
-        otpCode,           // ✅ save OTP with document
-        accessLog: [],     // ✅ initialize empty
-        accessRequest: []  // ✅ initialize empty
+        email: user.email,
+        phone: user.phone,
+        otpCode,
+        accessLog: [],
+        accessRequest: [],
       });
 
-      alert("File uploaded successfully with OTP saved!");
+      alert("File uploaded and document created successfully!");
       navigate("/dashboard");
     } catch (err) {
       console.error("Upload error:", err);
