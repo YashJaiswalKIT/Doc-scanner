@@ -82,6 +82,8 @@ const ScanUserQR = () => {
         email: ownerEmail,
         otp,
       });
+      //add console line
+      console.log(otp);
 
       const response = await fetch(
         "https://doc-scanner-backend.onrender.com/verify-otp",
