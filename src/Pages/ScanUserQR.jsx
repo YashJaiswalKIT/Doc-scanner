@@ -90,7 +90,7 @@ const ScanUserQR = () => {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: ownerEmail, otp }),
+          body: JSON.stringify({ email: ownerEmail, otp :String(otp)}),
         }
       );
 
